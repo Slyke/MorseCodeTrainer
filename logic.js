@@ -206,7 +206,7 @@ const keyPressHook = (eKey) => { // This is the main state switch. It is trigger
         updateState("correct listening answer");
       }
     } else {
-      incharacterScores.characterScores.incorrectListeningAnswers++;
+      characterScores.incorrectListeningAnswers++;
       characterScores.listening[currentCharacter.letter].incorrectCount++;
       window.localStorage.setItem('Score', JSON.stringify(characterScores));
       updateState("incorrect listening answer");

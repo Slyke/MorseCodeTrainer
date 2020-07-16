@@ -26,3 +26,8 @@ In the top of the `logic.js` file you will find all the settings, and codes that
 * `showCorrectAnswer` (Boolean) - true|false - If incorrect answer provided, show correct answer below.
 * `playAgainOnCorrect` (Boolean) - true|false - Play the morse code sound again when correct letter is pressed.
 * `trainingMode` (Int) - 1-3 - 1 = Listening, 2 = Keying in, 3 = Both. If 3 is set, it will randomly pick either keying in or listening
+
+## Examples
+![Keying In Example](/key_in.png)
+![Listening Example](/listening.png)
+![Correct Key In Example](/correct_key_in.png)
