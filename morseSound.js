@@ -1,7 +1,6 @@
 const AudioContext = window.AudioContext || window.webkitAudioContext;
-let dot = 1.2 / 15;
 
-const playMorseCodeSound = (inputCode) => {
+const playMorseCodeSound = (inputCode, dot = defaultDot, dash = defaultDashMultiplier, space = defaultSpaceMultiplier) => {
   return new Promise((resolve, reject) => {
     try {
       const ctx = new AudioContext();
@@ -25,12 +24,12 @@ const playMorseCodeSound = (inputCode) => {
             break;
           case "-":
             gainNode.gain.setValueAtTime(1, playDelta);
-            playDelta += 3 * dot;
+            playDelta += dash * dot;
             gainNode.gain.setValueAtTime(0, playDelta);
             playDelta += dot;
             break;
           case " ":
-            playDelta += 7 * dot;
+            playDelta += space * dot;
             break;
 
           default:
@@ -43,10 +42,39 @@ const playMorseCodeSound = (inputCode) => {
 
       oscillator.start();
       return setTimeout(() => {
+        oscillator.stop();
         return resolve();
       }, ((playDelta * 1000) + 100));
     } catch (err) {
-      reject(err);
+      return reject(err);
     }
   });
+};
+
+const beginKeySound = () => {
+  const ctx = new AudioContext();
+  let playDelta = ctx.currentTime;
+
+  const oscillator = ctx.createOscillator();
+  oscillator.type = "sine";
+  oscillator.frequency.value = 600;
+
+  const gainNode = ctx.createGain();
+  gainNode.gain.setValueAtTime(1, playDelta);
+
+  oscillator.connect(gainNode);
+  gainNode.connect(ctx.destination);
+
+  oscillator.start();
+
+  return oscillator;
+};
+
+const endKeySound = (oscillator) => {
+  try {
+    oscillator.stop();
+    return null;
+  } catch(err) {
+    console.log("[Debug::endKeySound] error:", err);
+  }
 };
