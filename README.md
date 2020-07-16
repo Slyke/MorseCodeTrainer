@@ -9,7 +9,7 @@ You can view your score at any time by typing `characterScores` into the Javascr
 While this project has no dependencies in order to run, it does include an optional HTTP server for ease of use. You can host it anywhere without needing to `npm install`.
 Commands to run locally:
 ```
-https://github.com/Slyke/MorseCodeTrainer.git
+git clone https://github.com/Slyke/MorseCodeTrainer.git
 cd MorseCodeTrainer
 npm install
 ```
