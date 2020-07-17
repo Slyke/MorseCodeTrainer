@@ -1,13 +1,14 @@
 // Morse code trainer logic.
 
-let listeningTrainingModeVisible = (window.localStorage.getItem('listeningTrainingModeVisible') === "false" ? false : true) ?? true; // Show letter when initially playing sound
+let listeningTrainingModeVisible = (window.localStorage.getItem('listeningTrainingModeVisible') === "true" ? true : false) ?? false; // Show letter when initially playing sound
 let showCorrectAnswer = (window.localStorage.getItem('showCorrectAnswer') === "false" ? false : true) ?? true;; // If incorrect answer, show correct answer below.
+let waitForKeyAfterAnswer = (window.localStorage.getItem('waitForKeyAfterAnswer') === "false" ? false : true) ?? true; // If false, will move onto the next question after a short delay.
 let playAgainOnCorrect = (window.localStorage.getItem('playAgainOnCorrect') === "false" ? false : true) ?? true;; // Play the morse code sound when correct letter is pressed.
 let trainingMode = Number.parseInt(window.localStorage.getItem('trainingMode') ?? 3); // 1 = Listening, 2 = Keying, 3 = Both
-const defaultDot = 1.2 / 15; // How long of a second is a dot. Standard is 0.08 (1.2 / 15)
-const defaultDashMultiplier = 3; // How many dot lengths of time make up a dash
-const defaultSpaceMultiplier = 7; // How many dot lengths of time make up a space
-const keyingTimeTolerance = 0.06; // When keying in codes, how tolerant should the check be? This is in seconds.
+let keyingTimeTolerance = Number.parseFloat(window.localStorage.getItem('keyingTimeTolerance') ?? 0.06); // When keying in codes, how tolerant should the check be? This is in seconds.
+let defaultDot = Number.parseFloat(window.localStorage.getItem('defaultDot') ?? 1.2 / 15); // How long of a second is a dot. Standard is 0.08 (1.2 / 15)
+let defaultDashMultiplier = Number.parseInt(window.localStorage.getItem('defaultDashMultiplier') ?? 3); // How many dot lengths of time make up a dash
+let defaultSpaceMultiplier = Number.parseInt(window.localStorage.getItem('defaultSpaceMultiplier') ?? 7); // How many dot lengths of time make up a space
 
 const morseCodeLetters = {
   // Letters
@@ -50,6 +51,14 @@ const morseCodeLetters = {
   9: '----.',
   0: '-----',
 
+  // HEX
+  // A: '-...-',
+  // B: '-..--',
+  // C: '-.-.-',
+  // D: '-.---',
+  // E: '--..-',
+  // F: '--.--',
+
   // Special Characters
   // ".": '.-.-.-',
   // ",": '--..--',
@@ -85,6 +94,7 @@ let currentKeyDown = null;
 let answerRecorder = "";
 let keyDownTime = 0;
 let sequenceEndTimer = null;
+let autoLoadNextQuestionTimer = null;
 
 let objLblStatusOutput = null;
 let objLblLetterDisplay = null;
@@ -161,13 +171,18 @@ const processKeyInputTime = () => {
 };
 
 const generateNewQuestion = (modeSelection = trainingMode) => {
+  updateDisplayLetter(" ");
+  if (autoLoadNextQuestionTimer) {
+    clearTimeout(autoLoadNextQuestionTimer);
+    autoLoadNextQuestionTimer = null;
+  }
+
   if (modeSelection === 1) {
     generateNewListeningTry();
   } else if (modeSelection === 2) {
     generateNewKeyingTry();
   } else if (modeSelection === 3) {
     const randomSelection = randomNumber(1, 2);
-    console.log(randomSelection)
     if (randomSelection === 1) {
       generateNewListeningTry();
     } else {
@@ -176,6 +191,20 @@ const generateNewQuestion = (modeSelection = trainingMode) => {
   } else {
     console.warn(`Unknown trainingMode "${modeSelection}"`);
     generateNewQuestion(3);
+  }
+};
+
+const loadNextQuestionTimeout = () => {
+  if (!waitForKeyAfterAnswer) {
+    if (!autoLoadNextQuestionTimer) {
+      autoLoadNextQuestionTimer = setTimeout(() => {
+        if (autoLoadNextQuestionTimer) {
+          clearTimeout(autoLoadNextQuestionTimer);
+          autoLoadNextQuestionTimer = null;
+        }
+        generateNewQuestion();
+      }, nextQuestionAutoLoadDelay);
+    }
   }
 };
 
@@ -198,12 +227,15 @@ const keyPressHook = (eKey) => { // This is the main state switch. It is trigger
       characterScores.correctListeningAnswers++;
       window.localStorage.setItem('Score', JSON.stringify(characterScores));
       if (playAgainOnCorrect) {
+        updateDisplayLetter(currentCharacter.letter);
         updateState("correct listening answer playing");
         playMorseCodeSound(morseCodeLetters[currentCharacter.letter]).then((result) => {
           updateState("correct listening answer");
+          loadNextQuestionTimeout();
         });
       } else {
         updateState("correct listening answer");
+        loadNextQuestionTimeout();
       }
     } else {
       characterScores.incorrectListeningAnswers++;
@@ -213,6 +245,7 @@ const keyPressHook = (eKey) => { // This is the main state switch. It is trigger
       if (showCorrectAnswer) {
         updateDisplayCorrectLetter(`Correct answer was: ${currentCharacter.letter}`);
       }
+      loadNextQuestionTimeout();
     }
 
   } else if (state === "correct listening answer" || state === "incorrect listening answer") {
@@ -240,6 +273,7 @@ const checkInputSequence = () => {
     characterScores.keying[currentCharacter.letter].correctCount++;
     characterScores.correctKeyingAnswers++;
     window.localStorage.setItem('Score', JSON.stringify(characterScores));
+    loadNextQuestionTimeout();
   } else {
     updateState("incorrect keying answer");
     characterScores.keying[currentCharacter.letter].incorrectCount++;
@@ -248,6 +282,7 @@ const checkInputSequence = () => {
     if (showCorrectAnswer) {
       updateDisplayCorrectLetter(`Correct answer is: ' ${currentCharacter.morseCode} ', but you entered ' ${answerRecorder} '`);
     }
+    loadNextQuestionTimeout();
   }
 };
 
