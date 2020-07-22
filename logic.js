@@ -9,6 +9,7 @@ let keyingTimeTolerance = Number.parseFloat(window.localStorage.getItem('keyingT
 let defaultDot = Number.parseFloat(window.localStorage.getItem('defaultDot') ?? 1.2 / 15); // How long of a second is a dot. Standard is 0.08 (1.2 / 15)
 let defaultDashMultiplier = Number.parseInt(window.localStorage.getItem('defaultDashMultiplier') ?? 3); // How many dot lengths of time make up a dash
 let defaultSpaceMultiplier = Number.parseInt(window.localStorage.getItem('defaultSpaceMultiplier') ?? 7); // How many dot lengths of time make up a space
+let keyingInTriggerBuffer = Number.parseInt(window.localStorage.getItem('keyingInTriggerBuffer') ?? -50); // After pressing . or / when keying in, how long before the next dot or dash can be entered after the sound ends.
 
 const morseCodeLetters = {
   // Letters
@@ -79,6 +80,7 @@ const stateOutputText = {
   "asking keying question": "Press [Enter] to key in the letter ",
   "waiting keying input": "Press [Enter] to key in the letter ",
   "receiving keying input": "Keep going! ",
+  "playing keying input": "Keep going! ",
   "correct keying answer": "Correct! Press [Space] to load the next character.",
   "incorrect keying answer": "Incorrect! Press [Space] to load the next character."
 };
@@ -137,7 +139,7 @@ const generateNewListeningTry = () => {
   if (listeningTrainingModeVisible) {
     updateDisplayLetter(currentCharacter.letter);
   }
-  playMorseCodeSound(newLetter.morseCode).then((result) => {
+  playMorseCodeSound({ inputCode: newLetter.morseCode }).then((result) => {
     if (listeningTrainingModeVisible) {
       updateDisplayLetter(" ");
     }
@@ -215,7 +217,7 @@ const keyPressHook = (eKey) => { // This is the main state switch. It is trigger
       if (listeningTrainingModeVisible) {
         updateDisplayLetter(currentCharacter.letter);
       }
-      playMorseCodeSound(currentCharacter.morseCode).then((result) => {
+      playMorseCodeSound({ inputCode: currentCharacter.morseCode }).then((result) => {
         if (listeningTrainingModeVisible) {
           updateDisplayLetter(" ");
         }
@@ -229,7 +231,7 @@ const keyPressHook = (eKey) => { // This is the main state switch. It is trigger
       if (playAgainOnCorrect) {
         updateDisplayLetter(currentCharacter.letter);
         updateState("correct listening answer playing");
-        playMorseCodeSound(morseCodeLetters[currentCharacter.letter]).then((result) => {
+        playMorseCodeSound({ inputCode: morseCodeLetters[currentCharacter.letter] }).then((result) => {
           updateState("correct listening answer");
           loadNextQuestionTimeout();
         });
@@ -286,20 +288,32 @@ const checkInputSequence = () => {
   }
 };
 
-const keyUpHook = () => {
-  if (keyOscillator) {
-    keyOscillator = endKeySound(keyOscillator);
-    processKeyInputTime();
+const keyUpHook = (eKey) => {
+  if (eKey.key === 'Enter') {
+    if (keyOscillator) {
+      keyOscillator = endKeySound(keyOscillator);
+      processKeyInputTime();
+      if (sequenceEndTimer) {
+        clearTimeout(sequenceEndTimer);
+      }
+      const sequenceEndTime = ((defaultDot * defaultSpaceMultiplier) + keyingTimeTolerance) * 1000;
+      sequenceEndTimer = setTimeout(() => {
+        checkInputSequence();
+        clearTimeout(sequenceEndTimer);
+      }, sequenceEndTime);
+    }
+    currentKeyDown = null
+  } else if (eKey.key === '.' || eKey.key === '/') {
     if (sequenceEndTimer) {
       clearTimeout(sequenceEndTimer);
     }
-    const sequenceEndTime = ((defaultDot * defaultSpaceMultiplier) + keyingTimeTolerance) * 1000;
+    const sequenceEndTime = ((defaultDot * (defaultSpaceMultiplier + defaultDashMultiplier)) + keyingTimeTolerance) * 1000;
     sequenceEndTimer = setTimeout(() => {
       checkInputSequence();
       clearTimeout(sequenceEndTimer);
     }, sequenceEndTime);
+    currentKeyDown = null
   }
-  currentKeyDown = null
 };
 
 const keyDownHook = (eKey) => {
@@ -308,7 +322,7 @@ const keyDownHook = (eKey) => {
       currentKeyDown = eKey.key;
       answerRecorder = "";
       keyDownTime = new Date().getTime();
-      updateState("receiving keying input")
+      updateState("receiving keying input");
       if (!keyOscillator) {
         keyOscillator = beginKeySound();
       } else {
@@ -326,6 +340,38 @@ const keyDownHook = (eKey) => {
           console.warn("[Debug::keyDownHook]: Oscillator is already playing!", keyOscillator);
         }
       }
+    }
+  } else if (eKey.key === '.') {
+    if (state === "waiting keying input") {
+      answerRecorder = ".";
+      playMorseCodeSound({ inputCode: ".", endBuffer: keyingInTriggerBuffer }).then((result) => {
+        updateDisplayCorrectLetter(answerRecorder);
+        updateState("receiving keying input");
+      });
+      updateState("playing keying input");
+    } else if (state === "receiving keying input") {
+      answerRecorder += ".";
+      playMorseCodeSound({ inputCode: ".", endBuffer: keyingInTriggerBuffer }).then((result) => {
+        updateDisplayCorrectLetter(answerRecorder);
+        updateState("receiving keying input");
+      });
+      updateState("playing keying input");
+    }
+  } else if (eKey.key === '/') {
+    if (state === "waiting keying input") {
+      answerRecorder = "-";
+      playMorseCodeSound({ inputCode: "-", endBuffer: keyingInTriggerBuffer }).then((result) => {
+        updateDisplayCorrectLetter(answerRecorder);
+        updateState("receiving keying input");
+      });
+      updateState("playing keying input");
+    } else if (state === "receiving keying input") {
+      answerRecorder += "-";
+      playMorseCodeSound({ inputCode: "-", endBuffer: keyingInTriggerBuffer }).then((result) => {
+        updateDisplayCorrectLetter(answerRecorder);
+        updateState("receiving keying input");
+      });
+      updateState("playing keying input");
     }
   }
 };

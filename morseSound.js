@@ -1,6 +1,6 @@
 const AudioContext = window.AudioContext || window.webkitAudioContext;
 
-const playMorseCodeSound = (inputCode, dot = defaultDot, dash = defaultDashMultiplier, space = defaultSpaceMultiplier) => {
+const playMorseCodeSound = ({ inputCode, dot = defaultDot, dash = defaultDashMultiplier, space = defaultSpaceMultiplier, endBuffer = 100 }) => {
   return new Promise((resolve, reject) => {
     try {
       const ctx = new AudioContext();
@@ -44,7 +44,7 @@ const playMorseCodeSound = (inputCode, dot = defaultDot, dash = defaultDashMulti
       return setTimeout(() => {
         oscillator.stop();
         return resolve();
-      }, ((playDelta * 1000) + 100));
+      }, ((playDelta * 1000) + endBuffer));
     } catch (err) {
       return reject(err);
     }
