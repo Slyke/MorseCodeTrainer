@@ -5,6 +5,9 @@ This is a small Morse Code trainer I made in my spare time. It not only asks you
 
 You can view your score at any time by typing `characterScores` into the Javascript console.
 
+## Run Online
+Simply navigate to: https://slyke.github.io/MorseCodeTrainer/
+
 ## Installation
 Commands to run locally:
 ```
