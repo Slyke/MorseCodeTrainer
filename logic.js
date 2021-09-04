@@ -78,7 +78,7 @@ const stateOutputText = {
   "waiting listening answer": "Press the key you heard",
   "playing listening question": "Playing...",
   "asking keying question": "Press [Enter] (manual), [.] (dot) or [/] (dash) to key in the letter ",
-  "waiting keying input": "[Enter], [.] for dot or [/] for dash to key in the letter ",
+  "waiting keying input": "Press [Enter] (manual), [.] (dot) or [/] (dash) to key in the letter ",
   "receiving keying input": "Keep going! ",
   "playing keying input": "Keep going! ",
   "correct keying answer": "Correct! Press [Space] to load the next character.",
