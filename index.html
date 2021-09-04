@@ -33,13 +33,25 @@
         font-family: "Lucida Console", Monaco, monospace;
       }
 
+      .source-code {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+      }
+
+      .source-code a:visited { color: #00aa00; }
+      .source-code a:link { color: #00aa00; }
+      .source-code a:hover { color: #ff0f00; }
+      .source-code a:active { color: #ff0f00; }
+
       .status {
         display: flex;
-        font-size: 3vw;
+        font-size: 2.6vw;
         color: #ffffff;
         justify-content: center;
       }
-      
+
       .result-correct {
         display: flex;
         font-size: 3vw;
@@ -61,6 +73,7 @@
   </head>
   <body onload="init();">
     <div class="main-container">
+      <div class="source-code"><a href="https://github.com/Slyke/MorseCodeTrainer" target="_blank">Source Code and read-me instructions</a></div>
       <div class="letter-container">
         <div class="letter-display" id="letterDisplay"></div>
       </div>
